@@ -1,1 +1,3 @@
-This is a VIT attempt with Tentorrent Tools
+This is a VIT attempt with Tentorrent Tools.
+
+To run:
