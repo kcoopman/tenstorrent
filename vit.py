@@ -271,12 +271,10 @@ if __name__ == "__main__":
   print("Number of elements including the name of the program:",
        len(sys.argv))
   
-  correct = 0
-  total = 0
 
+  
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   print("Using device: ", device, f"({torch.cuda.get_device_name(device)})" if torch.cuda.is_available() else "")
-
 
   model = VisionTransformer(d_model, n_classes, img_size, patch_size, n_channels, n_heads, n_layers).to(device)
   model.load_state_dict(torch.load("./vit.pt", weights_only=True))
@@ -284,21 +282,70 @@ if __name__ == "__main__":
 
 
   # Print model's state_dict
-  print("Model's state_dict:")
-  for param_tensor in model.state_dict():
-    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+  if  sys.argv[1] == "dict":
+    print("Model's state_dict:")
+    for param_tensor in model.state_dict():
+      print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+  
+  if  sys.argv[1] == "test":
+    print("Testing ----------")
+    
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+      for data in test_loader:
+        images, labels = data
+        images, labels = images.to(device), labels.to(device)
+
+        #outputs = transformer(images)
+        outputs = model(images)
+
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+    print(f'\nModel Accuracy: {100 * correct // total} %')
 
 
-  with torch.no_grad():
-    for data in test_loader:
-      images, labels = data
-      images, labels = images.to(device), labels.to(device)
+  if  sys.argv[1] == "train":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device: ", device, f"({torch.cuda.get_device_name(device)})" if torch.cuda.is_available() else "")
 
-      #outputs = transformer(images)
-      outputs = model(images)
+    transformer = VisionTransformer(d_model, n_classes, img_size, patch_size, n_channels, n_heads, n_layers).to(device)
+    optimizer = Adam(transformer.parameters(), lr=alpha)
+    criterion = nn.CrossEntropyLoss()
 
-      _, predicted = torch.max(outputs.data, 1)
-      total += labels.size(0)
-      correct += (predicted == labels).sum().item()
 
-  print(f'\nModel Accuracy: {100 * correct // total} %')
+    # Print model's state_dict
+    print("Model's state_dict:")
+    for param_tensor in transformer.state_dict():
+      print(param_tensor, "\t", transformer.state_dict()[param_tensor].size())
+
+      # Print optimizer's state_dict
+    print("Optimizer's state_dict:")
+    for var_name in optimizer.state_dict():
+      print(var_name, "\t", optimizer.state_dict()[var_name])
+
+
+    for epoch in range(epochs):
+
+      training_loss = 0.0
+      for i, data in enumerate(train_loader, 0):
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        optimizer.zero_grad()
+
+        outputs = transformer(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        training_loss += loss.item()
+
+      print(f'Epoch {epoch + 1}/{epochs} loss: {training_loss  / len(train_loader) :.3f}')
+
+    # Save the state diction
+    print("Save to ./vit.pt")
+    torch.save(transformer.state_dict(), "./vit.pt")
