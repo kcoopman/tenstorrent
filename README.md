@@ -5,7 +5,7 @@ To run:
 $ source ~/Ollama/venv_ollama/bin/activate
 $ python3 vit.py  
 
-"""
+```
 This is the name of the program: vit.py
 Number of elements including the name of the program: 1
 Using device:  cuda (NVIDIA GeForce GTX TITAN X)
@@ -102,4 +102,4 @@ classifier.0.weight 	 torch.Size([10, 9])
 classifier.0.bias 	 torch.Size([10])
 
 Model Accuracy: 90 %
-"""
+```
